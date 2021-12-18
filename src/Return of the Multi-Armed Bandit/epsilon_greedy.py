@@ -21,8 +21,8 @@ class Bandit:
     def __init__(self, p):
         # p: the win rate
         self.p = p
-        self.p_estimate = 0.
-        self.N = 0.
+        self.p_estimate = 0
+        self.N = 0
 
     def pull(self):
         # draw a 1 with probability p
@@ -30,7 +30,7 @@ class Bandit:
 
     def update(self, x):
         self.N += 1
-        self.p_estimate = ((self.N - 1 * self.p_estimate) + x) / self.N
+        self.p_estimate = (((self.N - 1) * self.p_estimate) + x) / self.N
 
 
 def experiment():
@@ -48,7 +48,7 @@ def experiment():
         # use epsilon-greedy to select the next bandit
         if np.random.random() < EPS:
             num_times_explored += 1
-            j = random.randint(0, len(bandits)-1)
+            j = np.random.randint(len(bandits))
         else:
             num_times_exploited += 1
 
