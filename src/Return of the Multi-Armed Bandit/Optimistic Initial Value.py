@@ -3,7 +3,6 @@
 # https://www.udemy.com/bayesian-machine-learning-in-python-ab-testing
 from __future__ import print_function, division
 
-import math
 import random
 from builtins import range
 # Note: you may need to update your version of future
@@ -13,17 +12,17 @@ from builtins import range
 import matplotlib.pyplot as plt
 import numpy as np
 
-NUM_TRIALS = 100000
-EPS = 0.05
-BANDIT_PROBABILITIES = [0.2, 0.5, 0.75,0.6,0.45,0.4,0.3,0.2,0.1,0.05]
+NUM_TRIALS = 10000
+# EPS = 0.1
+BANDIT_PROBABILITIES = [(0.2, 5), (0.5, 6), (0.75, 7)]
 
 
 class Bandit:
     def __init__(self, p):
         # p: the win rate
-        self.p = p
-        self.p_estimate = 0
-        self.N = 0
+        self.p = p[0]
+        self.p_estimate = p[1]
+        self.N = 1
 
     def pull(self):
         # draw a 1 with probability p
@@ -34,7 +33,7 @@ class Bandit:
         self.p_estimate = (((self.N - 1) * self.p_estimate) + x) / self.N
 
 
-def experiment():
+def experiment(BANDIT_PROBABILITIES=None):
     bandits = [Bandit(p) for p in BANDIT_PROBABILITIES]
 
     rewards = np.zeros(NUM_TRIALS)
@@ -45,15 +44,8 @@ def experiment():
     print("optimal j:", optimal_j)
 
     for i in range(NUM_TRIALS):
-        ESP = EPS/ math.log2(i + 2)
-        # use epsilon-greedy to select the next bandit
-        if np.random.random() < EPS:
-            num_times_explored += 1
-            j = np.random.randint(len(bandits))
-        else:
-            num_times_exploited += 1
 
-            j = np.argmax([b.p_estimate for b in bandits])
+        j = np.argmax([b.p_estimate for b in bandits])
 
         if j == optimal_j:
             num_optimal += 1
@@ -74,17 +66,17 @@ def experiment():
     # print total reward
     print("total reward earned:", rewards.sum())
     print("overall win rate:", rewards.sum() / NUM_TRIALS)
-    print("num_times_explored:", num_times_explored)
-    print("num_times_exploited:", num_times_exploited)
-    print("num times selected optimal bandit:", num_optimal)
+    print("num of times each bandit was chosen:", [b.N for b in bandits])
 
     # plot the results
     cumulative_rewards = np.cumsum(rewards)
     win_rates = cumulative_rewards / (np.arange(NUM_TRIALS) + 1)
+    plt.ylim([0, 1])
     plt.plot(win_rates)
+    BANDIT_PROBABILITIES = [probability[0] for probability in BANDIT_PROBABILITIES]
     plt.plot(np.ones(NUM_TRIALS) * np.max(BANDIT_PROBABILITIES))
     plt.show()
 
 
 if __name__ == "__main__":
-    experiment()
+    experiment(BANDIT_PROBABILITIES)
