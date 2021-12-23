@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 NUM_TRIALS = 10000
-# EPS = 0.1
-BANDIT_PROBABILITIES = [0.2 , 0.5, 0.75]
+BANDIT_PROBABILITIES = [0.2, 0.5, 0.75]
 
 
 class Bandit:
@@ -50,9 +49,9 @@ def experiment(BANDIT_PROBABILITIES=None):
         if bandit == optimal_j:
             num_optimal += 1
 
-    for i in range(len(bandits),NUM_TRIALS):
+    for i in range(len(bandits), NUM_TRIALS):
 
-        j = np.argmax([(b.p_estimate + sqrt(2*math.log2(i)/b.N)) for b in bandits])
+        j = np.argmax([(b.p_estimate + sqrt(2 * math.log2(i) / b.N)) for b in bandits])
 
         if j == optimal_j:
             num_optimal += 1
