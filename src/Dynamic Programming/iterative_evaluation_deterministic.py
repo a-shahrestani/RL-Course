@@ -1,4 +1,5 @@
-from gridworld import Gridworld
+from gridworld import standard_grid
+import numpy as np
 
 
 def print_policy(p, g):
@@ -11,7 +12,9 @@ def print_policy(p, g):
             grid_row.append(p.get((i, j), ' '))
         grid.append(grid_row)
     for row in grid:
+        print("_______________")
         print(*row, sep=" | ")
+    print("_______________")
 
 
 def print_value(v, g):
@@ -24,7 +27,24 @@ def print_value(v, g):
             grid_row.append(v.get((i, j), 0.0))
         grid.append(grid_row)
     for row in grid:
+        print("_______________")
         print(*row, sep=" | ")
+    print("_______________")
+
+
+def transition_fill(grid, ACTION_SPACE):
+    transition_probs = {}
+    rewards = {}
+    for i in range(grid.rows):
+        for j in range(grid.columns):
+            s = (i, j)
+            if not grid.is_terminal(s):
+                for a in ACTION_SPACE:
+                    s2 = grid.get_next_state(s, a)
+                    transition_probs[(s, a, s2)] = 1
+                    if s2 in grid.rewards:
+                        rewards[(s, a, s2)] = grid.rewards[s2]
+    return transition_probs, rewards
 
     def policy_evalution():
         pass
@@ -42,17 +62,8 @@ if __name__ == '__main__':
               (2, 2): 'U',
               (2, 3): 'L',
               }
-    grid = Gridworld(3, 4, (2, 0))
-    rewards = {(0, 0): 1, (1, 3): -1}
-    actions = {(0, 1): ('D', 'R'),
-               (0, 2): ('L', 'D', 'R'),
-               (1, 0): ('U', 'D'),
-               (1, 2): ('U', 'D', 'R'),
-               (2, 0): ('U', 'R'),
-               (2, 1): ('L', 'R'),
-               (2, 2): ('L', 'R', 'U'),
-               (2, 3): ('U', 'L'),
-               }
-    grid.set(actions, rewards)
-    values = {(i,j): 0.0 for i in range(grid.rows) for j in range(grid.columns)}
-    print_policy(policy, grid)
+    grid = standard_grid()
+    ACTION_SPACE = ('U', 'D', 'L', 'R')
+    V = {s: 0.0 for s in grid.all_states()}
+    # print_policy(policy, grid)
+    transition_probs, rewards = transition_fill(grid, ACTION_SPACE)
