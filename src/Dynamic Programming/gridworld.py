@@ -57,6 +57,21 @@ class Gridworld:
     def game_over(self):
         return self.current_state() not in self.actions
 
+    def standard_grid(self):
+        grid = Gridworld(3, 4, (2, 0))
+        rewards = {(0, 0): 1, (1, 3): -1}
+        actions = {(0, 1): ('D', 'R'),
+                   (0, 2): ('L', 'D', 'R'),
+                   (1, 0): ('U', 'D'),
+                   (1, 2): ('U', 'D', 'R'),
+                   (2, 0): ('U', 'R'),
+                   (2, 1): ('L', 'R'),
+                   (2, 2): ('L', 'R', 'U'),
+                   (2, 3): ('U', 'L'),
+                   }
+        grid.set(actions, rewards)
+        return grid
+
 
 if __name__ == '__main__':
     grid = Gridworld(3, 4, (2, 0))
