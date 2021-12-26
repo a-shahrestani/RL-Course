@@ -89,3 +89,4 @@ if __name__ == '__main__':
                (2, 3): ('U', 'L'),
                }
     grid.set(rewards, actions)
+

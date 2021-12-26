@@ -17,7 +17,7 @@ def print_policy(p, g):
     print("_______________")
 
 
-def print_value(v, g):
+def print_values(v, g):
     rows = g.rows
     columns = g.columns
     grid = []
@@ -67,3 +67,27 @@ if __name__ == '__main__':
     V = {s: 0.0 for s in grid.all_states()}
     # print_policy(policy, grid)
     transition_probs, rewards = transition_fill(grid, ACTION_SPACE)
+    gamma = 0.9
+    threshold = 10e-3
+    it = 0
+    while True:
+        biggest_change = 0
+        for s in grid.all_states():
+            if not grid.is_terminal(s):
+                old_v = V[s]
+                new_v = 0
+                for s2 in grid.all_states():
+                    for a in ACTION_SPACE:
+                        action_prob = 1 if policy.get(s) == a else 0
+                        r = rewards.get((s, a, s2), 0)
+                        new_v += action_prob * transition_probs.get((s, a, s2)) * (r + gamma * V[s2])
+                    V[s]= new_v
+                    biggest_change = max(biggest_change, np.abs(old_v - V[s]))
+        print("itter: ", it, 'biggest change:', biggest_change )
+        print_values(V,grid)
+        it += 1
+
+        if biggest_change < threshold:
+            break
+        print('\n\n')
+
