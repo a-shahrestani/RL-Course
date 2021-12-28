@@ -51,24 +51,25 @@ def transition_fill(grid, ACTION_SPACE):
 
 
 if __name__ == '__main__':
-    policy = {(0, 0): 'R',
-              (0, 1): 'R',
-              (0, 1): 'R',
-              (0, 2): 'R',
-              (1, 0): 'U',
-              (1, 2): 'U',
-              (2, 0): 'U',
-              (2, 1): 'R',
-              (2, 2): 'U',
-              (2, 3): 'L',
-              }
+    policy = {
+        (2, 0): 'U',
+        (1, 0): 'U',
+        (0, 0): 'R',
+        (0, 1): 'R',
+        (0, 2): 'R',
+        (1, 2): 'U',
+        (2, 1): 'R',
+        (2, 2): 'U',
+        (2, 3): 'L',
+    }
     grid = standard_grid()
     ACTION_SPACE = ('U', 'D', 'L', 'R')
     V = {s: 0.0 for s in grid.all_states()}
     # print_policy(policy, grid)
     transition_probs, rewards = transition_fill(grid, ACTION_SPACE)
+    print_policy(policy, grid)
     gamma = 0.9
-    threshold = 10e-3
+    threshold = 1e-3
     it = 0
     while True:
         biggest_change = 0
@@ -76,18 +77,16 @@ if __name__ == '__main__':
             if not grid.is_terminal(s):
                 old_v = V[s]
                 new_v = 0
-                for s2 in grid.all_states():
-                    for a in ACTION_SPACE:
+                for a in ACTION_SPACE:
+                    for s2 in grid.all_states():
                         action_prob = 1 if policy.get(s) == a else 0
                         r = rewards.get((s, a, s2), 0)
-                        new_v += action_prob * transition_probs.get((s, a, s2)) * (r + gamma * V[s2])
-                    V[s]= new_v
-                    biggest_change = max(biggest_change, np.abs(old_v - V[s]))
-        print("itter: ", it, 'biggest change:', biggest_change )
-        print_values(V,grid)
+                        new_v += action_prob * transition_probs.get((s, a, s2), 0) * (r + gamma * V[s2])
+                V[s] = new_v
+                biggest_change = max(biggest_change, np.abs(old_v - V[s]))
+        print("itter: ", it, 'biggest change:', biggest_change)
+        print_values(V, grid)
         it += 1
-
         if biggest_change < threshold:
             break
-        print('\n\n')
-
+    print('\n\n')
