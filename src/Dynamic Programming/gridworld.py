@@ -1,5 +1,8 @@
-class Gridworld:
+import numpy as np
 
+
+# Deterministic Gridworld
+class Grid:
     def __init__(self, rows, columns, start):
         self.actions = None
         self.rewards = None
@@ -67,8 +70,51 @@ class Gridworld:
         return self.current_state() not in self.actions
 
 
+# Probabilistic Gridworld
+class WindyGrid:
+
+    def __init__(self, rows, columns, start):
+        self.actions = None
+        self.rewards = None
+        self.probs = None
+        self.rows = rows
+        self.columns = columns
+        self.i = start[0]
+        self.j = start[1]
+
+    def set(self, rewards, actions, probs):
+        self.actions = actions
+        self.rewards = rewards
+        self.probs = probs
+
+    def sets_tate(self, state):
+        self.i = state[0]
+        self.j = state[1]
+
+    def current_state(self):
+        return (self.i, self.j)
+
+    def is_terminal(self, state):
+        return state not in self.actions
+
+    def move(self, action):
+        s = self.current_state()
+        next_state_probs = self.probs.get(s)
+        next_states = list(next_state_probs.keys)
+        next_probs = list(next_state_probs.values)
+        next_state = np.random.choice(next_states, next_probs)
+        self.i, self.j = next_state
+        return self.rewards.get(next_state, 0)
+
+    def all_states(self):
+        return set(self.actions.keys()) | set(self.rewards.keys())
+
+    def game_over(self):
+        return self.current_state() not in self.actions
+
+
 def standard_grid():
-    g = Gridworld(3, 4, (2, 0))
+    g = Grid(3, 4, (2, 0))
     rewards = {(0, 3): 1, (1, 3): -1}
     actions = {
         (0, 0): ('D', 'R'),
@@ -85,8 +131,66 @@ def standard_grid():
     return g
 
 
+def standard_windy_grid():
+    g = WindyGrid(3, 4, (2, 0))
+    rewards = {(0, 3): 1, (1, 3): -1}
+    actions = {
+        (0, 0): ('D', 'R'),
+        (0, 1): ('L', 'R'),
+        (0, 2): ('L', 'D', 'R'),
+        (1, 0): ('U', 'D'),
+        (1, 2): ('U', 'D', 'R'),
+        (2, 0): ('U', 'R'),
+        (2, 1): ('L', 'R'),
+        (2, 2): ('L', 'R', 'U'),
+        (2, 3): ('L', 'U'),
+    }
+    probs = {
+        ((2, 0), 'U'): {(1, 0): 1.0},
+        ((2, 0), 'D'): {(2, 0): 1.0},
+        ((2, 0), 'L'): {(2, 0): 1.0},
+        ((2, 0), 'R'): {(2, 1): 1.0},
+        ((1, 0), 'U'): {(0, 0): 1.0},
+        ((1, 0), 'D'): {(2, 0): 1.0},
+        ((1, 0), 'L'): {(1, 0): 1.0},
+        ((1, 0), 'R'): {(1, 0): 1.0},
+        ((0, 0), 'U'): {(0, 0): 1.0},
+        ((0, 0), 'D'): {(1, 0): 1.0},
+        ((0, 0), 'L'): {(0, 0): 1.0},
+        ((0, 0), 'R'): {(0, 1): 1.0},
+        ((0, 1), 'U'): {(0, 1): 1.0},
+        ((0, 1), 'D'): {(0, 1): 1.0},
+        ((0, 1), 'L'): {(0, 0): 1.0},
+        ((0, 1), 'R'): {(0, 2): 1.0},
+        ((0, 2), 'U'): {(0, 2): 1.0},
+        ((0, 2), 'D'): {(1, 2): 1.0},
+        ((0, 2), 'L'): {(0, 1): 1.0},
+        ((0, 2), 'R'): {(0, 3): 1.0},
+        ((2, 1), 'U'): {(2, 1): 1.0},
+        ((2, 1), 'D'): {(2, 1): 1.0},
+        ((2, 1), 'L'): {(2, 0): 1.0},
+        ((2, 1), 'R'): {(2, 2): 1.0},
+        ((2, 2), 'U'): {(1, 2): 1.0},
+        ((2, 2), 'D'): {(2, 2): 1.0},
+        ((2, 2), 'L'): {(2, 1): 1.0},
+        ((2, 2), 'R'): {(2, 3): 1.0},
+        ((2, 3), 'U'): {(1, 3): 1.0},
+        ((2, 3), 'D'): {(2, 3): 1.0},
+        ((2, 3), 'L'): {(2, 2): 1.0},
+        ((2, 3), 'R'): {(2, 3): 1.0},
+        ((1, 2), 'U'): {(0, 2): 0.5, (1, 3): 0.5},
+        ((1, 2), 'D'): {(2, 2): 1.0},
+        ((1, 2), 'L'): {(1, 2): 1.0},
+        ((1, 2), 'R'): {(1, 3): 1.0},
+    }
+    g.set(rewards, actions,probs)
+    return g
+
+
+ACTION_SPACE = ('U', 'D', 'L', 'R')
+
 if __name__ == '__main__':
-    grid = Gridworld(3, 4, (2, 0))
+    grid = Grid(3, 4, (2, 0))
     rewards = {(0, 0): 1, (1, 3): -1}
     actions = {(0, 0): ('D', 'R'),
                (0, 1): ('D', 'R'),
@@ -99,4 +203,3 @@ if __name__ == '__main__':
                (2, 3): ('U', 'L'),
                }
     grid.set(rewards, actions)
-
