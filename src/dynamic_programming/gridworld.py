@@ -55,15 +55,19 @@ class Grid:
     def all_states(self):
         return set(self.actions.keys()) | set(self.rewards.keys())
 
-    def undo_move(self, action):
+    def undo_move(self, state, action):
+        i,j = state
         if action == 'U':
-            self.i += 1
+            i += 1
         elif action == 'D':
-            self.i -= 1
+            i -= 1
         elif action == 'R':
-            self.j -= 1
+            j -= 1
         elif action == 'L':
-            self.j += 1
+            j += 1
+        if (i,j) in self.all_states():
+            self.i = i
+            self.j = j
         assert (self.current_state() in self.all_states())
 
     def game_over(self):
@@ -116,6 +120,35 @@ class WindyGrid:
 def standard_grid():
     g = Grid(3, 4, (2, 0))
     rewards = {(0, 3): 1, (1, 3): -1}
+    actions = {
+        (0, 0): ('D', 'R'),
+        (0, 1): ('L', 'R'),
+        (0, 2): ('L', 'D', 'R'),
+        (1, 0): ('U', 'D'),
+        (1, 2): ('U', 'D', 'R'),
+        (2, 0): ('U', 'R'),
+        (2, 1): ('L', 'R'),
+        (2, 2): ('L', 'R', 'U'),
+        (2, 3): ('L', 'U'),
+    }
+    g.set(rewards, actions)
+    return g
+
+def negative_grid(step_cost = -0.1):
+    g = Grid(3, 4, (2, 0))
+    rewards = {
+        (0, 0): step_cost,
+        (0, 1): step_cost,
+        (0, 2): step_cost,
+        (1, 0): step_cost,
+        (1, 2): step_cost,
+        (2, 0): step_cost,
+        (2, 1): step_cost,
+        (2, 2): step_cost,
+        (2, 3): step_cost,
+        (0, 3): 1,
+        (1, 3): -1
+    }
     actions = {
         (0, 0): ('D', 'R'),
         (0, 1): ('L', 'R'),
