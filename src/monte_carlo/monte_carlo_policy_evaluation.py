@@ -54,8 +54,8 @@ def play_game(grid, policy, max_steps=20):
     return states,rewards
 
 if __name__ == '__main__':
-    grid = standard_grid()
-    # grid = negative_grid()
+    # grid = standard_grid()
+    grid = negative_grid()
     policy = {
         (2, 0): 'U',
         (1, 0): 'U',
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         (2, 3): 'U',
     }
     print_values(grid.rewards,grid)
-
+    GAMMA = 0.9
     V = {}
     returns = {}
     states = grid.all_states()
@@ -79,4 +79,17 @@ if __name__ == '__main__':
             V[s] = 0
     max_iterations = 100
     for iter in range(max_iterations):
-        pass
+        states,rewards = play_game(grid,policy,max_steps= 20)
+        G = 0
+        T = len(states)
+        for t in range(T-2,-1,-1):
+                s = states[t]
+                r = rewards[t+1]
+                G = r + GAMMA * G
+                if s not in states[:t]:
+                    returns[s].append(G)
+                    V[s] = np.mean(returns[s])
+    print("values:")
+    print_values(V, grid)
+    print("policy:")
+    print_policy(policy, grid)
