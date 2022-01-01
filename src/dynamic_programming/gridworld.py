@@ -15,7 +15,7 @@ class Grid:
         self.actions = actions
         self.rewards = rewards
 
-    def sets_tate(self, state):
+    def set_state(self, state):
         self.i = state[0]
         self.j = state[1]
 
@@ -91,7 +91,7 @@ class WindyGrid:
         self.rewards = rewards
         self.probs = probs
 
-    def sets_tate(self, state):
+    def set_state(self, state):
         self.i = state[0]
         self.j = state[1]
 

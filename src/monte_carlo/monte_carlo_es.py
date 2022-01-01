@@ -37,12 +37,12 @@ def print_values(v, g):
 def play_game(grid, policy, max_steps=20):
     start_states = list(grid.actions.keys())
     start_idx = np.random.choice(len(start_states))
-    grid.sets_tate(start_states[start_idx])
+    grid.set_state(start_states[start_idx])
     s = grid.current_state()
     a = np.random.choice(ACTION_SPACE)
     states = [s]
     rewards = [0]
-    actions = []
+    actions = [a]
     for _ in range(max_steps):
         r = grid.move(a)
         next_state = grid.current_state()
@@ -51,7 +51,7 @@ def play_game(grid, policy, max_steps=20):
         if grid.game_over():
             break
         else:
-            a = policy[s]
+            a = policy[next_state]
             actions.append(a)
 
     return states, rewards, actions
@@ -64,8 +64,8 @@ def max_dict(d):
 
 
 if __name__ == '__main__':
-    # grid = standard_grid()
-    grid = negative_grid()
+    grid = standard_grid()
+    # grid = negative_grid()
     # randomly initializing the policy
     policy = {}
     for s in grid.actions.keys():
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         if it % 1000 == 0:
             print(it)
         biggest_change = 0
-        states, actions, rewards = play_game(grid, policy)
+        states, rewards, actions = play_game(grid, policy)
         states_actions = list(zip(states, actions))
         T = len(states)
         G = 0
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                 old_q = Q[s][a]
                 sample_counts[s][a] += 1
                 lr = 1 / sample_counts[s][a]
-                Q[s][a] = ((old_q * (sample_counts[s][a] - 1)) + G) * lr
+                Q[s][a] = old_q + lr * (G - old_q)
                 policy[s] = max_dict(Q[s])[0]
                 biggest_change = max(np.abs(Q[s][a] - old_q), biggest_change)
         delta.append(biggest_change)

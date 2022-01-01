@@ -35,7 +35,7 @@ def print_values(v, g):
 def play_game(grid, policy, max_steps=20):
     start_states = list(grid.actions.keys())
     start_idx = np.random.choice(len(start_states))
-    grid.sets_tate(start_states[start_idx])
+    grid.set_state(start_states[start_idx])
     s = grid.current_state()
     states = [s]
     rewards = [0]
