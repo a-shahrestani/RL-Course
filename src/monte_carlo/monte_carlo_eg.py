@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 
 from src.dynamic_programming.gridworld import standard_grid, ACTION_SPACE, standard_windy_grid_penalized, negative_grid
 import numpy as np
-
+import pandas as pd
 
 def print_policy(p, g):
     rows = g.rows
@@ -35,11 +35,9 @@ def print_values(v, g):
 
 
 def play_game(grid, policy, max_steps=20):
-    start_states = list(grid.actions.keys())
-    start_idx = np.random.choice(len(start_states))
-    grid.set_state(start_states[start_idx])
-    s = grid.current_state()
-    a = np.random.choice(ACTION_SPACE)
+    s = grid.reset()
+    a = epsilon_greed(policy,s)
+
     states = [s]
     rewards = [0]
     actions = [a]
@@ -51,7 +49,7 @@ def play_game(grid, policy, max_steps=20):
         if grid.game_over():
             break
         else:
-            a = policy[next_state]
+            a = epsilon_greed(policy,next_state)
             actions.append(a)
 
     return states, rewards, actions
@@ -61,6 +59,14 @@ def max_dict(d):
     max_val = max(d.values())
     max_keys = [key for key, val in d.items() if val == max_val]
     return np.random.choice(max_keys), max_val
+
+
+def epsilon_greed(policy, s, eps=0.1):
+    p = np.random.random()
+    if p < (1 - eps):
+        return policy[s]
+    else:
+        return np.random.choice(ACTION_SPACE)
 
 
 if __name__ == '__main__':
@@ -74,13 +80,16 @@ if __name__ == '__main__':
     print_values(grid.rewards, grid)
 
     GAMMA = 0.9
+    epsilon = 0.2
     Q = {}
     states = grid.all_states()
+    state_sample_count = {}
     sample_counts = {}
     for s in states:
         if s in grid.actions:
             Q[s] = {}
             sample_counts[s] = {}
+            state_sample_count[s] = 0
             for a in ACTION_SPACE:
                 Q[s][a] = 0
                 sample_counts[s][a] = 0
@@ -101,11 +110,14 @@ if __name__ == '__main__':
             a = actions[t]
             r = rewards[t + 1]
             G = r + GAMMA * G
+
+
             if (s, a) not in states_actions[:t]:
                 old_q = Q[s][a]
                 sample_counts[s][a] += 1
                 lr = 1 / sample_counts[s][a]
                 Q[s][a] = old_q + lr * (G - old_q)
+                state_sample_count[s] +=1
                 policy[s] = max_dict(Q[s])[0]
                 biggest_change = max(np.abs(Q[s][a] - old_q), biggest_change)
         delta.append(biggest_change)
@@ -118,3 +130,11 @@ if __name__ == '__main__':
 
     print("values:")
     print_values(V, grid)
+    print("state_sample_count:")
+    state_sample_count_arr = np.zeros((grid.rows, grid.columns))
+    for i in range(grid.rows):
+        for j in range(grid.columns):
+            if (i, j) in state_sample_count:
+                state_sample_count_arr[i, j] = state_sample_count[(i, j)]
+    df = pd.DataFrame(state_sample_count_arr)
+    print(df)

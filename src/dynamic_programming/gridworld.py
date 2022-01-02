@@ -15,6 +15,11 @@ class Grid:
         self.actions = actions
         self.rewards = rewards
 
+    def reset(self):
+        self.i = 2
+        self.j = 0
+        return (self.i, self.j)
+
     def set_state(self, state):
         self.i = state[0]
         self.j = state[1]
@@ -56,7 +61,7 @@ class Grid:
         return set(self.actions.keys()) | set(self.rewards.keys())
 
     def undo_move(self, state, action):
-        i,j = state
+        i, j = state
         if action == 'U':
             i += 1
         elif action == 'D':
@@ -65,7 +70,7 @@ class Grid:
             j -= 1
         elif action == 'L':
             j += 1
-        if (i,j) in self.all_states():
+        if (i, j) in self.all_states():
             self.i = i
             self.j = j
         assert (self.current_state() in self.all_states())
@@ -90,6 +95,10 @@ class WindyGrid:
         self.actions = actions
         self.rewards = rewards
         self.probs = probs
+    def reset(self):
+        self.i = 2
+        self.j = 0
+        return (self.i,self.j)
 
     def set_state(self, state):
         self.i = state[0]
@@ -134,7 +143,8 @@ def standard_grid():
     g.set(rewards, actions)
     return g
 
-def negative_grid(step_cost = -0.1):
+
+def negative_grid(step_cost=-0.1):
     g = Grid(3, 4, (2, 0))
     rewards = {
         (0, 0): step_cost,
@@ -216,11 +226,11 @@ def standard_windy_grid():
         ((1, 2), 'L'): {(1, 2): 1.0},
         ((1, 2), 'R'): {(1, 3): 1.0},
     }
-    g.set(rewards, actions,probs)
+    g.set(rewards, actions, probs)
     return g
 
 
-def standard_windy_grid_penalized(step_cost = -0.1):
+def standard_windy_grid_penalized(step_cost=-0.1):
     g = WindyGrid(3, 4, (2, 0))
     rewards = {
         (0, 0): step_cost,
@@ -284,9 +294,8 @@ def standard_windy_grid_penalized(step_cost = -0.1):
         ((1, 2), 'L'): {(1, 2): 1.0},
         ((1, 2), 'R'): {(1, 3): 1.0},
     }
-    g.set(rewards, actions,probs)
+    g.set(rewards, actions, probs)
     return g
-
 
 
 ACTION_SPACE = ('U', 'D', 'L', 'R')
