@@ -1,13 +1,19 @@
-from matplotlib import pyplot as plt
-from sklearn.kernel_approximation import RBFSampler, Nystroem
-from src.dynamic_programming.gridworld import standard_grid, ACTION_SPACE, standard_windy_grid_penalized, negative_grid
+# https://deeplearningcourses.com/c/artificial-intelligence-reinforcement-learning-in-python
+# https://www.udemy.com/artificial-intelligence-reinforcement-learning-in-python
+from __future__ import print_function, division
+from builtins import range
+# Note: you may need to update your version of future
+# sudo pip install -U future
+
+
 import numpy as np
+import matplotlib.pyplot as plt
+from src.dynamic_programming.gridworld import standard_grid, ACTION_SPACE, standard_windy_grid_penalized, negative_grid
+from sklearn.kernel_approximation import Nystroem, RBFSampler
 
 GAMMA = 0.9
 ALPHA = 0.01
-THRESHOLD = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
-
 
 def print_policy(p, g):
     rows = g.rows
@@ -39,19 +45,19 @@ def print_values(v, g):
     print("_______________")
 
 
-def epsilon_greedy(policy, s, eps=0.1):
+def epsilon_greedy(greedy, s, eps=0.1):
     # we'll use epsilon-soft to ensure all states are visited
     # what happens if you don't do this? i.e. eps=0
     p = np.random.random()
     if p < (1 - eps):
-        return policy[s]
+        return greedy[s]
     else:
         return np.random.choice(ALL_POSSIBLE_ACTIONS)
 
 
-def gather_samples(grid, n_samples=10000):
+def gather_samples(grid, n_episodes=10000):
     samples = []
-    for _ in range(n_samples):
+    for _ in range(n_episodes):
         s = grid.reset()
         samples.append(s)
         while not grid.game_over():
@@ -70,6 +76,8 @@ class Model:
         self.featurizer = RBFSampler()
         self.featurizer.fit(samples)
         dims = self.featurizer.n_components
+
+        # initialize linear model weights
         self.w = np.zeros(dims)
 
     def predict(self, s):
@@ -82,8 +90,15 @@ class Model:
 
 
 if __name__ == '__main__':
-    # grid = standard_grid()
+    # use the standard grid again (0 for every step) so that we can compare
+    # to iterative policy evaluation
     grid = negative_grid()
+
+    # print rewards
+    print("rewards:")
+    print_values(grid.rewards, grid)
+
+    # state -> action
     greedy_policy = {
         (2, 0): 'U',
         (1, 0): 'U',
@@ -95,13 +110,13 @@ if __name__ == '__main__':
         (2, 2): 'R',
         (2, 3): 'U',
     }
-    print_values(grid.rewards, grid)
 
     model = Model(grid)
     mse_per_episode = []
 
-    n_episode = 10000
-    for it in range(n_episode):
+    # repeat until convergence
+    n_episodes = 10000
+    for it in range(n_episodes):
         if (it + 1) % 100 == 0:
             print(it + 1)
 
@@ -114,19 +129,23 @@ if __name__ == '__main__':
             r = grid.move(a)
             s2 = grid.current_state()
 
+            # get the target
             if grid.is_terminal(s2):
                 target = r
             else:
                 Vs2 = model.predict(s2)
                 target = r + GAMMA * Vs2
 
+            # update the model
             g = model.grad(s)
             err = target - Vs
-            model.w += (ALPHA * err * g)
+            model.w += ALPHA * err * g
 
+            # accumulate error
             n_steps += 1
-            episode_err = err * err
+            episode_err += err * err
 
+            # update state
             s = s2
             Vs = Vs2
 
@@ -134,14 +153,17 @@ if __name__ == '__main__':
         mse_per_episode.append(mse)
 
     plt.plot(mse_per_episode)
-    plt.title("MSE per Episode")
+    plt.title("MSE per episode")
     plt.show()
 
+    # obtain predicted values
     V = {}
-    for s in grid.all_states():
+    states = grid.all_states()
+    for s in states:
         if s in grid.actions:
             V[s] = model.predict(s)
         else:
+            # terminal state or state we can't otherwise get to
             V[s] = 0
 
     print("values:")
