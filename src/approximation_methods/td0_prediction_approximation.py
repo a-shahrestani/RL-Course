@@ -5,7 +5,6 @@ import numpy as np
 
 GAMMA = 0.9
 ALPHA = 0.01
-THRESHOLD = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
 
 
