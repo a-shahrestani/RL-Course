@@ -41,10 +41,141 @@ def maybe_make_dir(dir):
 
 
 class LinearModel:
-    def __init__(self,input_dim,n_actions):
-        self.W = np.random.randn(input_dim,n_actions)/np.sqrt(input_dim)
+    def __init__(self, input_dim, n_actions):
+        self.W = np.random.randn(input_dim, n_actions) / np.sqrt(input_dim)
         self.b = np.zeros(input_dim)
         # used for momentum in gradient descent
         self.vW = 0
         self.vb = 0
         self.losses = []
+
+    def predict(self, X):
+        # X must be of shape N * D and 2D
+        assert (len(X.shape) == 2)
+        return X.dot(self.W) + self.b
+
+    def sgd(self, X, Y, learning_rate=0.01, momentum=0.9):
+        # X must be of shape N * D and 2D
+        assert (len(X.shape) == 2)
+        num_values = np.prod(Y.shape)
+        Yhat = self.predict(X)
+        gW = 2 * X.T.dot(Yhat - Y) / num_values
+        gb = 2 * (Yhat - Y).sum(axis=0) / num_values
+
+        # updating the momentum
+        self.vW = momentum * self.vW - learning_rate * gW
+        self.vb = momentum * self.vb - learning_rate * gb
+
+        # update params
+        self.W += self.vW
+        self.b += self.vb
+
+        mse = np.mean((Yhat - Y) ** 2)
+        self.losses.append(mse)
+
+    def load_weights(self, filepath):
+        npz = np.load(filepath)
+        self.W = npz['W']
+        self.b = npz['b']
+
+    def save_weights(self, filepath):
+        np.savez(filepath, W=self.W, b=self.b)
+
+
+class MultiStockEnv:
+    """
+      A 3-stock trading environment.
+      State: vector of size 7 (n_stock * 2 + 1)
+        - # shares of stock 1 owned
+        - # shares of stock 2 owned
+        - # shares of stock 3 owned
+        - price of stock 1 (using daily close price)
+        - price of stock 2
+        - price of stock 3
+        - cash owned (can be used to purchase more stocks)
+      Action: categorical variable with 27 (3^3) possibilities
+        - for each stock, you can:
+        - 0 = sell
+        - 1 = hold
+        - 2 = buy
+      """
+
+    def __init__(self, data, initial_investment=20000):
+        # information about the data
+        self.stock_price_history = data
+        self.n_step, self.n_stock = data.shape
+
+        # controlling variables
+        self.cur_step = None
+        self.stock_owned = None
+        self.stock_price = None
+        self.initial_investment = initial_investment
+        self.cash_in_hand = None
+        self.action_space = np.arange(3 ** self.n_stock)
+        # creates all the permutations of the actions for each stock
+        """
+        actions:
+            sell = 0
+            hold = 1
+            buy = 2
+        """
+        self.action_list = list(map(list, itertools.product([0, 1, 2], repeat=self.n_stock)))
+        self.state_dim = 2 * self.n_stock + 1
+        self.reset()
+
+    def reset(self):
+        self.cur_step = 0
+        self.stock_owned = np.zeros(self.n_stock)
+        self.stock_price = self.stock_price_history[self.cur_step]
+        self.cash_in_hand = self.initial_investment
+        return self._get_obs()
+
+    def step(self, action):
+        # check if the action is valid
+        assert action in self.action_space
+
+        prev_val = self._get_val()
+        self.cur_step += 1
+        self.stock_price = self.stock_price_history[self.cur_step]
+        self._trade()
+        cur_val = self._get_val()
+        reward = cur_val - prev_val
+
+        done = (self.cur_step == self.n_step - 1)
+        info = {'cur_val': cur_val}
+
+        return self._get_obs(), reward, done, info
+
+    # return observation/state
+    def _get_obs(self):
+        state = np.empty(self.state_dim)
+        state[:self.n_stock] = self.stock_owned
+        state[2 * self.n_stock:2 * self.n_stock] = self.stock_price
+        state[-1] = self.cash_in_hand
+        return state
+
+    def _get_val(self):
+        return self.stock_owned.dot(self.stock_price) + self.cash_in_hand
+
+    def _trade(self, action):
+        action_vec = self.action_list[action]
+        sell_indices = []
+        buy_indices = []
+        for i, a in enumerate(action_vec):
+            if a == 0:
+                sell_indices.append(i)
+            elif a == 2:
+                buy_indices.append(i)
+
+        for i in sell_indices:
+            self.cash_in_hand+= self.stock_price[i]*self.stock_owned[i]
+            self.stock_owned[i] = 0
+
+        can_buy = True
+        while can_buy:
+            for i in buy_indices:
+                if self.cash_in_hand > self.stock_price[i]:
+                    self.stock_owned[i] += 1  # buy one share
+                    self.cash_in_hand -= self.stock_price[i]
+                else:
+                    can_buy = False
