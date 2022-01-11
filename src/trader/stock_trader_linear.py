@@ -52,6 +52,9 @@ class LinearModel:
     def predict(self, X):
         # X must be of shape N * D and 2D
         assert (len(X.shape) == 2)
+        print(self.W)
+        print(self.b)
+        print(X)
         return X.dot(self.W) + self.b
 
     def sgd(self, X, Y, learning_rate=0.01, momentum=0.9):
@@ -166,11 +169,12 @@ class MultiStockEnv:
                 sell_indices.append(i)
             elif a == 2:
                 buy_indices.append(i)
-
+        # the sell action sells all the stocks of the certain stock
         for i in sell_indices:
-            self.cash_in_hand+= self.stock_price[i]*self.stock_owned[i]
+            self.cash_in_hand += self.stock_price[i] * self.stock_owned[i]
             self.stock_owned[i] = 0
 
+        # the buy action buys 1 of each stock until there is no more cash is left
         can_buy = True
         while can_buy:
             for i in buy_indices:
@@ -179,3 +183,56 @@ class MultiStockEnv:
                     self.cash_in_hand -= self.stock_price[i]
                 else:
                     can_buy = False
+
+
+class DQNAgent:
+    def __init__(self, state_size, action_size):
+        self.state_size = state_size
+        self.action_size = action_size
+        self.gamma = 0.9
+        self.epsilon = 1
+        self.epsilon_min = 0.01
+        self.epsilon_decay = 0.995
+        self.model = LinearModel(state_size, action_size)
+
+    def act(self, state):
+        if np.random.rand() <= self.epsilon:
+            return np.random.choice(self.action_size)
+        act_values = self.model.predict(state)
+        return np.argmax(act_values[0])
+
+    def train(self, state, action, reward, next_state, done):
+        if done:
+            target = reward
+        else:
+            target = reward + self.gamma * np.amax(self.model.predict(next_state), axis=1)
+        # So we only calculated the target for the action we took
+        # We need to keep the value for the other targets the same
+        target_full = self.model.predict(state)
+        # We change the value for the action we took to the new target - the others remain the same
+        target_full[0, action] = target
+
+        self.model.sgd(state, target_full)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
+
+
+def play_one_episode(agent, env, is_train):
+    state = env.reset()
+    state = env.get_scaler().transform([state])
+    done = False
+
+    while not done:
+        action = agent.act(state)
+        next_state, reward, done, info = env.step(action)
+        if is_train == 'train':
+            agent.train(state, action, reward, next_state, done)
+        state = next_state
+
+    return info['cur_val']
